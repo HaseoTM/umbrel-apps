@@ -64,7 +64,7 @@ services:
             forward_auth romm_server_1:8080 {
               uri /api/users/me
             }
-            reverse_proxy web:3000 {
+            reverse_proxy homelab-romm-webstation_web_1:3000 {
               flush_interval -1
             }
           }
