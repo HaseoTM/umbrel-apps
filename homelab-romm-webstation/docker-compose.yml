@@ -1,12 +1,12 @@
 version: "3.7"
 
 services:
-  # Umbrel dashboard tile (umbrel.local:4110), behind the Umbrel login.
-  # Admin desktop access only. Players use https://<host>:4443 (the proxy service below).
+  # Umbrel dashboard tile (port 4110), behind the Umbrel login. The tile opens
+  # https://romm.tail173dcd.ts.net; the admin desktop stays at :4110/streaming/.
   app_proxy:
     environment:
-      APP_HOST: homelab-romm-webstation_web_1
-      APP_PORT: 3000
+      APP_HOST: homelab-romm-webstation_proxy_1
+      APP_PORT: 8090
       PROXY_AUTH_ADD: "true"
 
   # Webstation: Selkies desktop + emulators + romm-broker.
@@ -76,6 +76,18 @@ services:
         # on-demand certificate permission check (container-internal only)
         http://127.0.0.1:5555 {
           respond /allow 200
+        }
+        # Umbrel tile entry (reached only through Umbrel's app_proxy): admin desktop at /streaming/,
+        # everything else redirects to the Tailscale address
+        http://:8090 {
+          handle /streaming/* {
+            reverse_proxy homelab-romm-webstation_web_1:3000 {
+              flush_interval -1
+            }
+          }
+          handle {
+            redir https://romm.tail173dcd.ts.net/ 302
+          }
         }
 
         # plain-HTTP entry for the Tailscale sidecar (never published on the host)
