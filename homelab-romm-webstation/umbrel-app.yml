@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: homelab-romm-webstation
 category: media
 name: RomM Webstation
-version: "0.15.3-ls51-gpu"
+version: "0.15.3-ls51-ts"
 tagline: Emulator streaming companion for RomM (PS2, GameCube, Wii, 3DS, PSP and more)
 description: >-
   Runs the LinuxServer.io webstation image (romm tag): a Selkies streaming desktop with PCSX2, Dolphin,
@@ -34,10 +34,16 @@ environment:
     note: >-
       Shared secret RomM sends to the broker (X-Broker-Secret). Use a long random value and put the same value
       in RomM's config.yml as streaming.containers[].broker_secret.
+  - name: TS_AUTHKEY
+    services:
+      - tailscale
+    note: >-
+      Optional Tailscale auth key for the "romm" tailnet device. Leave it empty to log in with the link
+      shown in the app logs instead. It's only needed for the first login, because the state is kept in data/tailscale.
 gallery: []
 releaseNotes: >-
-  Declares the GPU permission so umbrelOS passes the Intel iGPU (/dev/dri) through, and pins the render node
-  so emulator rendering and stream encoding use it.
+  Adds a Tailscale sidecar that serves RomM and streaming at https://romm.<tailnet>.ts.net with a trusted
+  certificate, for home and remote play. Also includes the GPU permission and the pinned render node.
 defaultUsername: ""
 defaultPassword: ""
 submitter: homelab
