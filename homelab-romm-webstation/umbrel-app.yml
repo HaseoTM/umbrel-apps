@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: homelab-romm-webstation
 category: media
 name: RomM Webstation
-version: "0.15.3-ls51-ts2"
+version: "0.15.3-ls51-ts3"
 tagline: Emulator streaming companion for RomM (PS2, GameCube, Wii, 3DS, PSP and more)
 description: >-
   Runs the LinuxServer.io webstation image (romm tag): a Selkies streaming desktop with PCSX2, Dolphin,
