@@ -1,0 +1,41 @@
+manifestVersion: 1.1
+id: homelab-romm-webstation
+category: media
+name: RomM Webstation
+version: "0.15.3-ls51"
+tagline: Emulator streaming companion for RomM (PS2, GameCube, Wii, 3DS, PSP and more)
+description: >-
+  Runs the LinuxServer.io webstation image (romm tag): a Selkies streaming desktop with PCSX2, Dolphin,
+  Azahar, PPSSPP, DuckStation, Flycast, RetroArch and other emulators, plus the romm-broker sidecar.
+
+
+  RomM launches games here and streams them back into its own player. This app mounts the existing RomM
+  library in place (it never copies or moves ROMs) and passes through the Intel iGPU (/dev/dri).
+
+
+  Play through https://umbrel.local:4443, or the Umbrel's Tailscale name on port 4443. A Caddy proxy
+  serves RomM and the streaming room together on one HTTPS origin, and the room requires a RomM login.
+  RomM talks to the broker server-to-server over the Umbrel Docker network. Set BROKER_SECRET in this
+  app's settings and use the same value as broker_secret in RomM's config.yml.
+developer: LinuxServer.io / rommapp
+website: https://docs.romm.app/latest/using/emulator-streaming/
+repo: https://github.com/linuxserver/docker-webstation
+support: https://github.com/romm-streaming/romm-broker/issues
+port: 4110
+path: "/streaming/"
+dependencies:
+  - romm
+environment:
+  - name: BROKER_SECRET
+    services:
+      - web
+    note: >-
+      Shared secret RomM sends to the broker (X-Broker-Secret). Use a long random value and put the same value
+      in RomM's config.yml as streaming.containers[].broker_secret.
+gallery: []
+releaseNotes: >-
+  Initial private packaging of linuxserver/webstation:romm v0.15.3-ls51 for umbrelOS.
+defaultUsername: ""
+defaultPassword: ""
+submitter: homelab
+submission: ""
