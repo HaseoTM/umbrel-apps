@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: homelab-romm-webstation
 category: media
 name: RomM Webstation
-version: "0.15.3-ls51"
+version: "0.15.3-ls51-gpu"
 tagline: Emulator streaming companion for RomM (PS2, GameCube, Wii, 3DS, PSP and more)
 description: >-
   Runs the LinuxServer.io webstation image (romm tag): a Selkies streaming desktop with PCSX2, Dolphin,
@@ -25,6 +25,8 @@ port: 4110
 path: "/streaming/"
 dependencies:
   - romm
+permissions:
+  - GPU
 environment:
   - name: BROKER_SECRET
     services:
@@ -34,7 +36,8 @@ environment:
       in RomM's config.yml as streaming.containers[].broker_secret.
 gallery: []
 releaseNotes: >-
-  Initial private packaging of linuxserver/webstation:romm v0.15.3-ls51 for umbrelOS.
+  Declares the GPU permission so umbrelOS passes the Intel iGPU (/dev/dri) through, and pins the render node
+  so emulator rendering and stream encoding use it.
 defaultUsername: ""
 defaultPassword: ""
 submitter: homelab
