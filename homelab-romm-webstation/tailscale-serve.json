@@ -1,1 +1,1 @@
-[object Object]
+{"TCP":{"443":{"HTTPS":true}},"Web":{"${TS_CERT_DOMAIN}:443":{"Handlers":{"/":{"Proxy":"http://homelab-romm-webstation_proxy_1:8080"}}}}}
