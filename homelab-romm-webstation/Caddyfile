@@ -2,26 +2,16 @@
 	admin off
 	local_certs
 	skip_install_trust
-	# Certificates are issued by Caddy's own local CA, on demand, for whatever hostname you use:
-	# umbrel.local, the Tailscale MagicDNS name, and so on.
+	# Local fallback certificates (https://umbrel.local:4443) come from Caddy's own CA, issued on demand.
 	on_demand_tls {
 		ask http://127.0.0.1:5555/allow
 	}
 }
 
-# Internal permission endpoint for on-demand certificates (reachable only inside this container).
-http://127.0.0.1:5555 {
-	respond /allow 200
-}
-
-https:// {
-	tls internal {
-		on_demand
-	}
-
+# Shared routing: RomM at /, the streaming room at /streaming/ (RomM login required).
+(romm_routes) {
 	redir /streaming /streaming/ 308
 
-	# Streaming room: only for users logged in to RomM (the RomM session cookie is checked).
 	handle /streaming/* {
 		forward_auth romm_server_1:8080 {
 			uri /api/users/me
@@ -31,8 +21,26 @@ https:// {
 		}
 	}
 
-	# Everything else is RomM itself.
 	handle {
 		reverse_proxy romm_server_1:8080
 	}
+}
+
+# Internal permission endpoint for on-demand certificates (reachable only inside this container).
+http://127.0.0.1:5555 {
+	respond /allow 200
+}
+
+# Internal plain-HTTP entry for the Tailscale sidecar. Tailscale terminates HTTPS with a trusted
+# *.ts.net certificate. This port is never published on the host.
+http://:8080 {
+	import romm_routes
+}
+
+# Local HTTPS entry (port 4443 on the host, self-signed).
+https:// {
+	tls internal {
+		on_demand
+	}
+	import romm_routes
 }
