@@ -42,11 +42,55 @@ services:
 
   # HTTPS front door. It serves RomM and /streaming/ on one origin, as the broker docs require,
   # and requires a logged-in RomM session for /streaming/.
+  # The Caddyfile is embedded below, because umbrelOS app updates only refresh this compose file.
   proxy:
     image: caddy:2.11.7-alpine@sha256:e70b164da81ef698b3ad19af799ea6086ce6d9e48ed4079eb9fe26f6fbf14ee5
     restart: on-failure
+    entrypoint: ["/bin/sh", "-c", "printf '%s\\n' \"$$CADDYFILE\" > /tmp/Caddyfile && exec caddy run --config /tmp/Caddyfile --adapter caddyfile"]
+    environment:
+      CADDYFILE: |
+        {
+          admin off
+          local_certs
+          skip_install_trust
+          on_demand_tls {
+            ask http://127.0.0.1:5555/allow
+          }
+        }
+
+        (romm_routes) {
+          redir /streaming /streaming/ 308
+          handle /streaming/* {
+            forward_auth romm_server_1:8080 {
+              uri /api/users/me
+            }
+            reverse_proxy web:3000 {
+              flush_interval -1
+            }
+          }
+          handle {
+            reverse_proxy romm_server_1:8080
+          }
+        }
+
+        # on-demand certificate permission check (container-internal only)
+        http://127.0.0.1:5555 {
+          respond /allow 200
+        }
+
+        # plain-HTTP entry for the Tailscale sidecar (never published on the host)
+        http://:8080 {
+          import romm_routes
+        }
+
+        # local HTTPS entry, host port 4443 (self-signed)
+        https:// {
+          tls internal {
+            on_demand
+          }
+          import romm_routes
+        }
     volumes:
-      - ${APP_DATA_DIR}/Caddyfile:/etc/caddy/Caddyfile:ro
       - ${APP_DATA_DIR}/data/caddy:/data      # internal CA + certificates (persistent)
     ports:
       - "4443:443"
@@ -59,16 +103,18 @@ services:
   tailscale:
     image: tailscale/tailscale:v1.104.7@sha256:72c1e19e0aedca96b8533bbb0b4368564410ff20b17e53b804eb6c1f04a31be4
     restart: on-failure
+    # The serve config is embedded here and written at startup (umbrelOS updates only refresh this file).
+    entrypoint: ["/bin/sh", "-c", "mkdir -p /serve && printf '%s\\n' \"$$TS_SERVE_JSON\" > /serve/serve.json && exec /usr/local/bin/containerboot"]
     environment:
       TS_HOSTNAME: "romm"
       TS_STATE_DIR: "/var/lib/tailscale"
       TS_USERSPACE: "true"
       TS_ACCEPT_DNS: "false"
       TS_SERVE_CONFIG: "/serve/serve.json"
+      TS_SERVE_JSON: '{"TCP":{"443":{"HTTPS":true}},"Web":{"$${TS_CERT_DOMAIN}:443":{"Handlers":{"/":{"Proxy":"http://homelab-romm-webstation_proxy_1:8080"}}}}}'
       # Optional TS_AUTHKEY can be set in this app's Umbrel settings. Without it, the login link
       # appears in the app logs. Approve it once, and the node state persists in data/tailscale.
     volumes:
       - ${APP_DATA_DIR}/data/tailscale:/var/lib/tailscale
-      - ${APP_DATA_DIR}/tailscale-serve.json:/serve/serve.json:ro
     depends_on:
       - proxy
