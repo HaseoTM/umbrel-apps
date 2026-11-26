@@ -1,0 +1,52 @@
+version: "3.7"
+
+services:
+  # Umbrel dashboard tile (umbrel.local:4110), behind the Umbrel login.
+  # Admin desktop access only. Players use https://<host>:4443 (the proxy service below).
+  app_proxy:
+    environment:
+      APP_HOST: homelab-romm-webstation_web_1
+      APP_PORT: 3000
+      PROXY_AUTH_ADD: "true"
+
+  # Webstation: Selkies desktop + emulators + romm-broker.
+  # It publishes no ports of its own. RomM reaches the broker over the Docker network,
+  # and browsers reach the room only through the authenticated HTTPS proxy.
+  web:
+    image: ghcr.io/linuxserver/webstation:romm@sha256:7c3d643d0e4ece2cd4a47ed41a91c8f46a949670937558045dfafcc0e1d3c639
+    restart: on-failure
+    shm_size: "2gb"
+    environment:
+      PUID: "1000"           # same uid/gid as romm_server_1, so synced saves stay owned by RomM
+      PGID: "1000"
+      TZ: "America/New_York"
+      SUBFOLDER: "/streaming/"
+      TITLE: "RomM Webstation"
+      START_DOCKER: "false"  # no nested Docker daemon
+      BROKER_FRAME_ANCESTORS: "'self'"   # only RomM's own origin may embed the room
+      # BROKER_SECRET is set through this app's Umbrel settings (never stored in the repo).
+    volumes:
+      # Emulator settings, BIOS/firmware, saves, memory cards, broker exports: all persistent.
+      - ${APP_DATA_DIR}/data/config:/config
+      # RomM's existing library, mounted in place at the same path RomM uses.
+      - ${APP_DATA_DIR}/../romm/data/library:/romm/library
+    devices:
+      - /dev/dri:/dev/dri    # Intel UHD (N300): emulator rendering + hardware video encode
+    deploy:
+      resources:
+        limits:
+          cpus: "6"          # leave 2 of 8 threads for umbrelOS and other apps
+          memory: 6g
+
+  # HTTPS front door. It serves RomM and /streaming/ on one origin, as the broker docs require,
+  # and requires a logged-in RomM session for /streaming/.
+  proxy:
+    image: caddy:2.11.7-alpine@sha256:e70b164da81ef698b3ad19af799ea6086ce6d9e48ed4079eb9fe26f6fbf14ee5
+    restart: on-failure
+    volumes:
+      - ${APP_DATA_DIR}/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${APP_DATA_DIR}/data/caddy:/data      # internal CA + certificates (persistent)
+    ports:
+      - "4443:443"
+    depends_on:
+      - web
