@@ -1,0 +1,38 @@
+{
+	admin off
+	local_certs
+	skip_install_trust
+	# Certificates are issued by Caddy's own local CA, on demand, for whatever hostname you use:
+	# umbrel.local, the Tailscale MagicDNS name, and so on.
+	on_demand_tls {
+		ask http://127.0.0.1:5555/allow
+	}
+}
+
+# Internal permission endpoint for on-demand certificates (reachable only inside this container).
+http://127.0.0.1:5555 {
+	respond /allow 200
+}
+
+https:// {
+	tls internal {
+		on_demand
+	}
+
+	redir /streaming /streaming/ 308
+
+	# Streaming room: only for users logged in to RomM (the RomM session cookie is checked).
+	handle /streaming/* {
+		forward_auth romm_server_1:8080 {
+			uri /api/users/me
+		}
+		reverse_proxy web:3000 {
+			flush_interval -1
+		}
+	}
+
+	# Everything else is RomM itself.
+	handle {
+		reverse_proxy romm_server_1:8080
+	}
+}
