@@ -24,6 +24,8 @@ services:
       TITLE: "RomM Webstation"
       START_DOCKER: "false"  # no nested Docker daemon
       BROKER_FRAME_ANCESTORS: "'self'"   # only RomM's own origin may embed the room
+      DRINODE: "/dev/dri/renderD128"     # Intel iGPU render node (desktop/emulator rendering)
+      DRI_NODE: "/dev/dri/renderD128"    # same node for hardware video encoding
       # BROKER_SECRET is set through this app's Umbrel settings (never stored in the repo).
     volumes:
       # Emulator settings, BIOS/firmware, saves, memory cards, broker exports: all persistent.
