@@ -1,8 +1,8 @@
 manifestVersion: 1.1
 id: homelab-romm-webstation
 category: media
-name: RomM Play
-version: "0.15.3-ls51-ts5"
+name: RomM Webstation
+version: "0.15.3-ls51-ts6"
 tagline: Emulator streaming companion for RomM (PS2, GameCube, Wii, 3DS, PSP and more)
 description: >-
   Runs the LinuxServer.io webstation image (romm tag): a Selkies streaming desktop with PCSX2, Dolphin,
@@ -22,7 +22,7 @@ website: https://docs.romm.app/latest/using/emulator-streaming/
 repo: https://github.com/linuxserver/docker-webstation
 support: https://github.com/romm-streaming/romm-broker/issues
 port: 4110
-path: ""
+path: "/streaming/"
 dependencies:
   - romm
 permissions:
