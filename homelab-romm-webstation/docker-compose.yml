@@ -16,7 +16,26 @@ services:
     image: ghcr.io/linuxserver/webstation:romm@sha256:7c3d643d0e4ece2cd4a47ed41a91c8f46a949670937558045dfafcc0e1d3c639
     restart: on-failure
     shm_size: "2gb"
+    # 3DS save fix: the broker uploads only the save files changed in a session, and restores only the latest upload.
+    # This service touches the whole Azahar save tree when a 3DS game starts, so every upload is complete.
+    entrypoint: ["/bin/sh", "-c", "mkdir -p /custom-services.d && printf '%s\\n' \"$$SAVE_KEEPER\" > /custom-services.d/azahar-save-keeper && chmod 755 /custom-services.d/azahar-save-keeper && exec /init"]
     environment:
+      SAVE_KEEPER: |
+        #!/bin/sh
+        last=""
+        while :; do
+          pid=""
+          for d in /proc/[0-9]*; do
+            case "$$(tr '\0' ' ' < $$d/cmdline 2>/dev/null)" in *retroarch*azahar*) pid=$${d#/proc/}; break;; esac
+          done
+          if [ -n "$$pid" ] && [ "$$pid" != "$$last" ]; then
+            sleep 2
+            [ -d /config/.retroarch/saves/Azahar ] && find /config/.retroarch/saves/Azahar -type f -exec touch -c {} +
+            echo "azahar-save-keeper: touched save tree for pid $$pid"
+          fi
+          last=$$pid
+          sleep 3
+        done
       PUID: "1000"           # same uid/gid as romm_server_1, so synced saves stay owned by RomM
       PGID: "1000"
       TZ: "America/New_York"
